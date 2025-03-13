@@ -33,6 +33,7 @@
       "web-dist/**/*"
     ],
     "windows": {
+      "signCommand": "trusted-signing-cli -e https://weu.codesigning.azure.net/ -a heat -c tulipfox %1",
       "webviewInstallMode": {
         "type": "embedBootstrapper"
       }

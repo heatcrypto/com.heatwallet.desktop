@@ -47,9 +47,16 @@ jobs:
           Copy-Item src-tauri/tauri.offline.json src-tauri/tauri.conf.json
           (Get-Content src-tauri/tauri.conf.json) -replace '__VERSION_REPLACE_THIS__', "${{ env.VERSION }}" | Set-Content src-tauri/tauri.conf.json
 
+      - name: Install trusted-signing-cli
+        if: matrix.platform == 'windows-latest'
+        run: cargo install trusted-signing-cli
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}          
         with:
           tagName: "app-v${{ env.VERSION }}-build-${{ env.BUILD_NUMBER }}"
           releaseName: "App v${{ env.VERSION }} (Build ${{ env.BUILD_NUMBER }})"
