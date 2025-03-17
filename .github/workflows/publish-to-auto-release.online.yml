@@ -9,6 +9,22 @@ on:
 # On each push to the `release` branch it will create or update a GitHub release, build your app, and upload the artifacts to the release.
 
 jobs:
+  # generate_latest_json:
+  #   runs-on: ubuntu-latest
+  #   needs: publish-tauri
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v2
+
+  #     - name: Generate and Upload latest.json
+  #       run: node ./scripts/generate-latest-json.js
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #         TAG_NAME: ${{ steps.get_version.outputs.tag }}  # Replace with your actual version output if needed
+  #         RELEASE_ID: ${{ steps.create_release.outputs.id }}  # Replace with your release job's output
+  #         UPDATER_JSON_PREFER_NSIS: 'true'
+  #         UPDATER_JSON_KEEP_UNIVERSAL: 'true'      
+
   publish-tauri:
     permissions:
       contents: write
@@ -139,6 +155,9 @@ jobs:
         if: matrix.platform == 'windows-latest'
         run: cargo install trusted-signing-cli
 
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -246,7 +265,23 @@ jobs:
         if: matrix.platform == 'macos-latest'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
+          # Create a tag name based on version and build number
           TAG_NAME="app-v${{ env.VERSION }}-build-${{ env.BUILD_NUMBER }}"
+          echo "Tag for release: $TAG_NAME"
+          
+          # Sign the final DMG; this produces a .sig file in the same directory as the DMG
+          echo "Creating signature for ${{ env.DMG_PATH }}..."
+          cargo tauri signer sign "${{ env.DMG_PATH }}" --key "$TAURI_SIGNING_PRIVATE_KEY" --password "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
+          
+          # Define the path to the generated signature file (assumes .sig is appended to the DMG file name)
+          SIG_PATH="${{ env.DMG_PATH }}.sig"
+          echo "Signature file created at $SIG_PATH"
+          
+          # Upload both the DMG and its signature file to the release
           echo "Uploading ${{ env.DMG_PATH }} to release $TAG_NAME..."
           gh release upload "$TAG_NAME" "${{ env.DMG_PATH }}" --clobber
+          echo "Uploading $SIG_PATH to release $TAG_NAME..."
+          gh release upload "$TAG_NAME" "$SIG_PATH" --clobber
