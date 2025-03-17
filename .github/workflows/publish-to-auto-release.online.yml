@@ -68,6 +68,8 @@ jobs:
         run: |
           Copy-Item src-tauri/tauri.online.json src-tauri/tauri.conf.json
           (Get-Content src-tauri/tauri.conf.json) -replace '__VERSION_REPLACE_THIS__', "${{ env.VERSION }}" | Set-Content src-tauri/tauri.conf.json
+          Copy-Item src-tauri/Cargo.toml.template src-tauri/Cargo.toml
+          (Get-Content src-tauri/Cargo.toml) -replace '__VERSION_REPLACE_THIS__', "${{ env.VERSION }}" | Set-Content src-tauri/Cargo.toml
   
       - name: Use Online Installer Config (Linux/macOS)
         if: runner.os != 'Windows'
@@ -78,6 +80,12 @@ jobs:
             sed -i '' "s/__VERSION_REPLACE_THIS__/${{ env.VERSION }}/g" src-tauri/tauri.conf.json
           else
             sed -i "s/__VERSION_REPLACE_THIS__/${{ env.VERSION }}/g" src-tauri/tauri.conf.json
+          fi
+          cp src-tauri/Cargo.toml.template src-tauri/Cargo.toml
+          if [ "$(uname)" = "Darwin" ]; then
+            sed -i '' "s/__VERSION_REPLACE_THIS__/${{ env.VERSION }}/g" src-tauri/Cargo.toml
+          else
+            sed -i "s/__VERSION_REPLACE_THIS__/${{ env.VERSION }}/g" src-tauri/Cargo.toml
           fi
 
       # Step for macOS notarization setup
@@ -143,12 +151,15 @@ jobs:
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
         with:
           tagName: "app-v${{ env.VERSION }}-build-${{ env.BUILD_NUMBER }}"
           releaseName: "App v${{ env.VERSION }} (Build ${{ env.BUILD_NUMBER }})"
           releaseBody: "See the assets to download this version and install."
           releaseDraft: true
           prerelease: false
+          includeUpdaterJson: true
           args: ${{ matrix.args }}
 
       - name: Set APP_PATH
