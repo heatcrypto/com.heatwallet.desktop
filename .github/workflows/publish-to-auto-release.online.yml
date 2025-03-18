@@ -262,22 +262,26 @@ jobs:
         if: matrix.platform == 'macos-latest'
         run: cargo install tauri-cli
   
-      - name: Upload Notarized DMG to Existing GitHub Release
+      - name: Upload Notarized DMG and Signature to Existing GitHub Release
         if: matrix.platform == 'macos-latest'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
-          # Create a tag name based on version and build number
           TAG_NAME="app-v${{ env.VERSION }}-build-${{ env.BUILD_NUMBER }}"
           echo "Tag for release: $TAG_NAME"
           
-          # Sign the final DMG; this produces a .sig file in the same directory as the DMG
-          echo "Creating signature for ${{ env.DMG_PATH }}..."
-          cargo tauri signer sign "${{ env.DMG_PATH }}" --key "$TAURI_SIGNING_PRIVATE_KEY" --password "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
+          # Save the private key to a temporary file
+          echo "$TAURI_SIGNING_PRIVATE_KEY" > private-key.pem
           
-          # Define the path to the generated signature file (assumes .sig is appended to the DMG file name)
+          # Sign the final DMG
+          echo "Creating signature for ${{ env.DMG_PATH }}..."
+          cargo tauri signer sign "${{ env.DMG_PATH }}" --private-key-path private-key.pem
+          
+          # Remove private key file after signing for security
+          rm private-key.pem
+      
+          # Define the path to the generated signature file
           SIG_PATH="${{ env.DMG_PATH }}.sig"
           echo "Signature file created at $SIG_PATH"
           
