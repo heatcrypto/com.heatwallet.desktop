@@ -267,16 +267,23 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           TAG_NAME="app-v${{ env.VERSION }}-build-${{ env.BUILD_NUMBER }}"
           echo "Tag for release: $TAG_NAME"
           
           # Save the private key to a temporary file
-          echo "$TAURI_SIGNING_PRIVATE_KEY" > private-key.pem
+          echo "$TAURI_SIGNING_PRIVATE_KEY" | base64 --decode > private-key.pem
           
-          # Sign the final DMG
+          # Ensure password is passed when signing
+          if [ -z "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD" ]; then
+            echo "Error: Signing private key password is missing!" >&2
+            exit 1
+          fi
+      
+          # Sign the final DMG with password
           echo "Creating signature for ${{ env.DMG_PATH }}..."
-          cargo tauri signer sign "${{ env.DMG_PATH }}" --private-key-path private-key.pem
+          cargo tauri signer sign "${{ env.DMG_PATH }}" --private-key-path private-key.pem --password "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
           
           # Remove private key file after signing for security
           rm private-key.pem
@@ -290,3 +297,4 @@ jobs:
           gh release upload "$TAG_NAME" "${{ env.DMG_PATH }}" --clobber
           echo "Uploading $SIG_PATH to release $TAG_NAME..."
           gh release upload "$TAG_NAME" "$SIG_PATH" --clobber
+      
