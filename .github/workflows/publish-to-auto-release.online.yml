@@ -25,6 +25,17 @@ jobs:
   #         UPDATER_JSON_PREFER_NSIS: 'true'
   #         UPDATER_JSON_KEEP_UNIVERSAL: 'true'      
 
+
+# Heat.Wallet_2.6.16_amd64.AppImage.sig
+# Heat.Wallet_2.6.16_x64_en-US.msi.sig
+# Heat.Wallet_v2.6.16_aarch64-apple-darwin.dmg.sig
+# Heat.Wallet_v2.6.16_x86_64-apple-darwin.dmg.sig
+
+
+
+
+
+
   publish-tauri:
     permissions:
       contents: write
@@ -158,12 +169,12 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ env.CERT_ID }}
-          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
-          APPLE_API_KEY_PATH: ${{ env.APPLE_API_KEY_PATH }}
+          # APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          # APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          # APPLE_SIGNING_IDENTITY: ${{ env.CERT_ID }}
+          # APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          # APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          # APPLE_API_KEY_PATH: ${{ env.APPLE_API_KEY_PATH }}
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
@@ -215,7 +226,7 @@ jobs:
         if: matrix.platform == 'macos-latest'
         run: |
           ARCH="${{ contains(matrix.args, 'aarch64') && 'aarch64-apple-darwin' || 'x86_64-apple-darwin' }}"
-          DMG_NAME="Heat Wallet_v${{ env.VERSION }}_${ARCH}.dmg"
+          DMG_NAME="Heat Wallet_${{ env.VERSION }}_${ARCH}.dmg"
           # Create a temporary folder to structure the DMG
           TEMP_DMG_FOLDER="HeatWalletDMG"
           mkdir -p "$TEMP_DMG_FOLDER"
