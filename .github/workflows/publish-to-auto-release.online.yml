@@ -9,34 +9,52 @@ on:
 # On each push to the `release` branch it will create or update a GitHub release, build your app, and upload the artifacts to the release.
 
 jobs:
-  # generate_latest_json:
-  #   runs-on: ubuntu-latest
-  #   needs: publish-tauri
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v2
+  read-version:
+    runs-on: ubuntu-latest
+    outputs:
+      VERSION: ${{ steps.get_version.outputs.VERSION }}
+      BUILD_NUMBER: ${{ steps.get_version.outputs.BUILD_NUMBER }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-  #     - name: Generate and Upload latest.json
-  #       run: node ./scripts/generate-latest-json.js
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #         TAG_NAME: ${{ steps.get_version.outputs.tag }}  # Replace with your actual version output if needed
-  #         RELEASE_ID: ${{ steps.create_release.outputs.id }}  # Replace with your release job's output
-  #         UPDATER_JSON_PREFER_NSIS: 'true'
-  #         UPDATER_JSON_KEEP_UNIVERSAL: 'true'      
+      - name: Read version from JSON (Cross-Platform)
+        id: get_version
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            VERSION=$(powershell -Command "(Get-Content src-tauri/web-dist/version.json | ConvertFrom-Json).version")
+            BUILD_NUMBER=$(powershell -Command "(Get-Content src-tauri/web-dist/version.json | ConvertFrom-Json).build_number")
+          else
+            VERSION=$(jq -r '.version' src-tauri/web-dist/version.json)
+            BUILD_NUMBER=$(jq -r '.build_number' src-tauri/web-dist/version.json)
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
+          echo "::set-output name=VERSION::$VERSION"
+          echo "::set-output name=BUILD_NUMBER::$BUILD_NUMBER"
 
+  generate_latest_json:
+    needs: [publish-tauri, read-version]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-# Heat.Wallet_2.6.16_amd64.AppImage.sig
-# Heat.Wallet_2.6.16_x64_en-US.msi.sig
-# Heat.Wallet_v2.6.16_aarch64-apple-darwin.dmg.sig
-# Heat.Wallet_v2.6.16_x86_64-apple-darwin.dmg.sig
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'  # or another LTS version
 
-
-
-
-
+      - name: Run update-latest.js script
+        env:
+          VERSION: ${{ needs.read-version.outputs.VERSION }}
+          BUILD_NUMBER: ${{ needs.read-version.outputs.BUILD_NUMBER }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/update-latest.js
 
   publish-tauri:
+    needs: read-version
     permissions:
       contents: write
     strategy:
@@ -75,28 +93,14 @@ jobs:
         # webkitgtk 4.0 is for Tauri v1 - webkitgtk 4.1 is for Tauri v2.
         # You can remove the one that doesn't apply to your app to speed up the workflow a bit.
 
-      - name: Read version from JSON (Cross-Platform)
-        id: version
-        shell: bash
-        run: |
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            VERSION=$(powershell -Command "(Get-Content src-tauri/web-dist/version.json | ConvertFrom-Json).version")
-            BUILD_NUMBER=$(powershell -Command "(Get-Content src-tauri/web-dist/version.json | ConvertFrom-Json).build_number")
-          else
-            VERSION=$(jq -r '.version' src-tauri/web-dist/version.json)
-            BUILD_NUMBER=$(jq -r '.build_number' src-tauri/web-dist/version.json)
-          fi
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
-
       - name: Use Online Installer Config (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           Copy-Item src-tauri/tauri.online.json src-tauri/tauri.conf.json
-          (Get-Content src-tauri/tauri.conf.json) -replace '__VERSION_REPLACE_THIS__', "${{ env.VERSION }}" | Set-Content src-tauri/tauri.conf.json
+          (Get-Content src-tauri/tauri.conf.json) -replace '__VERSION_REPLACE_THIS__', "${{ needs.read-version.outputs.VERSION }}" | Set-Content src-tauri/tauri.conf.json
           Copy-Item src-tauri/Cargo.toml.template src-tauri/Cargo.toml
-          (Get-Content src-tauri/Cargo.toml) -replace '__VERSION_REPLACE_THIS__', "${{ env.VERSION }}" | Set-Content src-tauri/Cargo.toml
+          (Get-Content src-tauri/Cargo.toml) -replace '__VERSION_REPLACE_THIS__', "${{ needs.read-version.outputs.VERSION }}" | Set-Content src-tauri/Cargo.toml
   
       - name: Use Online Installer Config (Linux/macOS)
         if: runner.os != 'Windows'
@@ -104,15 +108,15 @@ jobs:
         run: |
           cp src-tauri/tauri.online.json src-tauri/tauri.conf.json
           if [ "$(uname)" = "Darwin" ]; then
-            sed -i '' "s/__VERSION_REPLACE_THIS__/${{ env.VERSION }}/g" src-tauri/tauri.conf.json
+            sed -i '' "s/__VERSION_REPLACE_THIS__/${{ needs.read-version.outputs.VERSION }}/g" src-tauri/tauri.conf.json
           else
-            sed -i "s/__VERSION_REPLACE_THIS__/${{ env.VERSION }}/g" src-tauri/tauri.conf.json
+            sed -i "s/__VERSION_REPLACE_THIS__/${{ needs.read-version.outputs.VERSION }}/g" src-tauri/tauri.conf.json
           fi
           cp src-tauri/Cargo.toml.template src-tauri/Cargo.toml
           if [ "$(uname)" = "Darwin" ]; then
-            sed -i '' "s/__VERSION_REPLACE_THIS__/${{ env.VERSION }}/g" src-tauri/Cargo.toml
+            sed -i '' "s/__VERSION_REPLACE_THIS__/${{ needs.read-version.outputs.VERSION }}/g" src-tauri/Cargo.toml
           else
-            sed -i "s/__VERSION_REPLACE_THIS__/${{ env.VERSION }}/g" src-tauri/Cargo.toml
+            sed -i "s/__VERSION_REPLACE_THIS__/${{ needs.read-version.outputs.VERSION }}/g" src-tauri/Cargo.toml
           fi
 
       # Step for macOS notarization setup
@@ -181,8 +185,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: "app-v${{ env.VERSION }}-build-${{ env.BUILD_NUMBER }}"
-          releaseName: "App v${{ env.VERSION }} (Build ${{ env.BUILD_NUMBER }})"
+          tagName: "app-v${{ needs.read-version.outputs.VERSION }}-build-${{ needs.read-version.outputs.BUILD_NUMBER }}"
+          releaseName: "App v${{ needs.read-version.outputs.VERSION }} (Build ${{ needs.read-version.outputs.BUILD_NUMBER }})"
           releaseBody: "See the assets to download this version and install."
           releaseDraft: true
           prerelease: false
@@ -226,7 +230,7 @@ jobs:
         if: matrix.platform == 'macos-latest'
         run: |
           ARCH="${{ contains(matrix.args, 'aarch64') && 'aarch64-apple-darwin' || 'x86_64-apple-darwin' }}"
-          DMG_NAME="Heat Wallet_${{ env.VERSION }}_${ARCH}.dmg"
+          DMG_NAME="Heat Wallet_${{ needs.read-version.outputs.VERSION }}_${ARCH}.dmg"
           # Create a temporary folder to structure the DMG
           TEMP_DMG_FOLDER="HeatWalletDMG"
           mkdir -p "$TEMP_DMG_FOLDER"
@@ -280,7 +284,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
-          TAG_NAME="app-v${{ env.VERSION }}-build-${{ env.BUILD_NUMBER }}"
+          TAG_NAME="app-v${{ needs.read-version.outputs.VERSION }}-build-${{ needs.read-version.outputs.BUILD_NUMBER }}"
           echo "Tag for release: $TAG_NAME"
 
           # Sign the final DMG with password
