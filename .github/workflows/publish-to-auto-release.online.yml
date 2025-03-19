@@ -271,22 +271,10 @@ jobs:
         run: |
           TAG_NAME="app-v${{ env.VERSION }}-build-${{ env.BUILD_NUMBER }}"
           echo "Tag for release: $TAG_NAME"
-          
-          # Save the private key to a temporary file
-          echo "$TAURI_SIGNING_PRIVATE_KEY" | base64 --decode > private-key.pem
-          
-          # Ensure password is passed when signing
-          if [ -z "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD" ]; then
-            echo "Error: Signing private key password is missing!" >&2
-            exit 1
-          fi
-      
+
           # Sign the final DMG with password
           echo "Creating signature for ${{ env.DMG_PATH }}..."
-          cargo tauri signer sign "${{ env.DMG_PATH }}" --private-key-path private-key.pem --password "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
-          
-          # Remove private key file after signing for security
-          rm private-key.pem
+          cargo tauri signer sign "${{ env.DMG_PATH }}" --private-key "$TAURI_SIGNING_PRIVATE_KEY" --password "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
       
           # Define the path to the generated signature file
           SIG_PATH="${{ env.DMG_PATH }}.sig"
