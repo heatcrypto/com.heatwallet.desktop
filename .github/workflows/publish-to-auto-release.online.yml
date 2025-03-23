@@ -31,8 +31,9 @@ jobs:
           fi
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
-          echo "::set-output name=VERSION::$VERSION"
-          echo "::set-output name=BUILD_NUMBER::$BUILD_NUMBER"
+          # Write outputs to the GITHUB_OUTPUT file (new method)
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_OUTPUT
 
   generate_latest_json:
     needs: [publish-tauri, read-version]
