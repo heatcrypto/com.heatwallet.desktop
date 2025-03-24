@@ -274,12 +274,13 @@ jobs:
           xcrun stapler staple "${{ env.DMG_PATH }}"
           xcrun stapler validate "${{ env.DMG_PATH }}"
 
-      - name: Install Tauri CLI
-        if: matrix.platform == 'macos-latest'
-        run: cargo install tauri-cli
+      # - name: Install Tauri CLI
+      #   if: matrix.platform == 'macos-latest'
+      #   run: cargo install tauri-cli
   
       - name: Upload Notarized DMG and Signature to Existing GitHub Release
         if: matrix.platform == 'macos-latest'
+        working-directory: ./src-tauri
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -290,7 +291,7 @@ jobs:
 
           # Sign the final DMG with password
           echo "Creating signature for ${{ env.DMG_PATH }}..."
-          cargo tauri signer sign "${{ env.DMG_PATH }}" --private-key "$TAURI_SIGNING_PRIVATE_KEY" --password "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
+          cargo run -p tauri-cli -- signer sign "${{ env.DMG_PATH }}" --private-key "$TAURI_SIGNING_PRIVATE_KEY" --password "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
       
           # Define the path to the generated signature file
           SIG_PATH="${{ env.DMG_PATH }}.sig"
