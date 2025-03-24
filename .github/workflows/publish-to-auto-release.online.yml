@@ -171,6 +171,9 @@ jobs:
         if: matrix.platform == 'windows-latest'
         run: cargo install trusted-signing-cli
 
+      - name: Clean cargo build to force dep version
+        run: cargo clean
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
