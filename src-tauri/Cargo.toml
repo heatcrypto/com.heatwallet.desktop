@@ -1,6 +1,6 @@
 [package]
 name = "heat_wallet"
-version = "__VERSION_REPLACE_THIS__"
+version = "2.10.18"
 description = "Crypto Wallet Communicator"
 authors = ["you"]
 license = ""
