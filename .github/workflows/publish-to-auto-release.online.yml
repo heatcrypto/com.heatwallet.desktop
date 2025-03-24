@@ -171,6 +171,9 @@ jobs:
         if: matrix.platform == 'windows-latest'
         run: cargo install trusted-signing-cli
 
+      # Remove this, its only for temp fix for
+      # https://github.com/jhpratt/deranged/issues/18
+      # deranged = "=0.4.0"
       - name: Clean cargo build to force dep version
         run: cargo clean
 
