@@ -280,7 +280,7 @@ jobs:
   
       - name: Upload Notarized DMG and Signature to Existing GitHub Release
         if: matrix.platform == 'macos-latest'
-        working-directory: ./src-tauri
+        working-directory: ./
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -291,7 +291,7 @@ jobs:
 
           # Sign the final DMG with password
           echo "Creating signature for ${{ env.DMG_PATH }}..."
-          cargo run -p tauri-cli -- signer sign "${{ env.DMG_PATH }}" --private-key "$TAURI_SIGNING_PRIVATE_KEY" --password "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
+          cargo run --package tauri-cli -- signer sign "${{ env.DMG_PATH }}" --private-key "$TAURI_SIGNING_PRIVATE_KEY" --password "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
       
           # Define the path to the generated signature file
           SIG_PATH="${{ env.DMG_PATH }}.sig"
