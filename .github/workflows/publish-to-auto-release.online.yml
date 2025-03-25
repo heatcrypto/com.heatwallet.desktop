@@ -197,9 +197,10 @@ jobs:
         if: matrix.platform == 'macos-latest'
         run: |
           ARCH="${{ contains(matrix.args, 'aarch64') && 'aarch64-apple-darwin' || 'x86_64-apple-darwin' }}"
-          APP_PATH=$(find src-tauri/target/$ARCH/release/bundle/macos -name '*.app' | head -n 1)
+          SEARCH_PATH="src-tauri/target/$ARCH/release/bundle/macos"
+          APP_PATH=$(find "$SEARCH_PATH" -name '*.app' | head -n 1)
           if [ -z "$APP_PATH" ]; then
-            echo "Error: Could not find .app!"
+            echo "Error: Could not find .app! in $SEARCH_PATH"
             exit 1
           fi
           echo "APP_PATH=$APP_PATH" >> $GITHUB_ENV
@@ -289,9 +290,12 @@ jobs:
           TAG_NAME="app-v${{ needs.read-version.outputs.VERSION }}-build-${{ needs.read-version.outputs.BUILD_NUMBER }}"
           echo "Tag for release: $TAG_NAME"
 
+          echo "Building tauri-cli-wrapper..."
+          cargo build -p tauri-cli-wrapper --release
+
           # Sign the final DMG with password
           echo "Creating signature for ${{ env.DMG_PATH }}..."
-          cargo run --package tauri-cli -- signer sign "${{ env.DMG_PATH }}" --private-key "$TAURI_SIGNING_PRIVATE_KEY" --password "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
+          ./target/release/tauri-cli-wrapper signer sign "${{ env.DMG_PATH }}" --private-key "$TAURI_SIGNING_PRIVATE_KEY" --password "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
       
           # Define the path to the generated signature file
           SIG_PATH="${{ env.DMG_PATH }}.sig"
