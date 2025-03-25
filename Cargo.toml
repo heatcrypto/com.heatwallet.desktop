@@ -1,7 +1,5 @@
 [workspace]
 members = [
-  "tauri-cli-wrapper"
+  "tauri-cli-wrapper",
+  "src-tauri"
 ]
-
-[patch.crates-io]
-deranged = "=0.4.0"
