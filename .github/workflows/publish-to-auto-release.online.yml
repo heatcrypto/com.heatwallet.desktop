@@ -197,7 +197,7 @@ jobs:
         if: matrix.platform == 'macos-latest'
         run: |
           ARCH="${{ contains(matrix.args, 'aarch64') && 'aarch64-apple-darwin' || 'x86_64-apple-darwin' }}"
-          SEARCH_PATH="src-tauri/target/$ARCH/release/bundle/macos"
+          SEARCH_PATH="target/$ARCH/release/bundle/macos"
           APP_PATH=$(find "$SEARCH_PATH" -name '*.app' | head -n 1)
           if [ -z "$APP_PATH" ]; then
             echo "Error: Could not find .app! in $SEARCH_PATH"
@@ -281,7 +281,6 @@ jobs:
   
       - name: Upload Notarized DMG and Signature to Existing GitHub Release
         if: matrix.platform == 'macos-latest'
-        working-directory: ./
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
