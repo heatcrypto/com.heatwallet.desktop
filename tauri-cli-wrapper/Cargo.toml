@@ -1,8 +1,0 @@
-[package]
-name = "tauri-cli-wrapper"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-deranged = "=0.4.0"
-tauri-cli = { version = "2.4.0", default-features = false }
