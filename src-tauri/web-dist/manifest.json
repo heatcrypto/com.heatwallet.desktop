@@ -1,6 +1,6 @@
 {
     "name": "Heat Wallet",
-    "version": "2.6.0+3",
+    "version": "2.12.0+5",
     "short_name": "Heat Wallet",
     "id": "?homescreen=1",
     "scope": "/",

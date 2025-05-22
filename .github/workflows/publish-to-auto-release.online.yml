@@ -275,11 +275,21 @@ jobs:
           xcrun stapler staple "${{ env.DMG_PATH }}"
           xcrun stapler validate "${{ env.DMG_PATH }}"
 
+      - name: Create tar.gz for auto-updates
+        if: matrix.platform == 'macos-latest'
+        run: |
+          ARCH="${{ contains(matrix.args, 'aarch64') && 'aarch64-apple-darwin' || 'x86_64-apple-darwin' }}"
+          TARGZ_NAME="Heat.Wallet_${{ needs.read-version.outputs.VERSION }}_${ARCH}.tar.gz"
+          # Create tar.gz from the .app bundle
+          echo "Creating tar.gz from ${{ env.APP_PATH }} to $TARGZ_NAME"
+          tar -czf "$TARGZ_NAME" -C "$(dirname "${{ env.APP_PATH }}")" "$(basename "${{ env.APP_PATH }}")"
+          echo "TARGZ_PATH=$TARGZ_NAME" >> $GITHUB_ENV          
+
       - name: Install Tauri CLI (via Node.js)
         if: matrix.platform == 'macos-latest'
         run: npm install -g @tauri-apps/cli
   
-      - name: Upload Notarized DMG and Signature to Existing GitHub Release
+      - name: Sign and Upload Files to GitHub Release
         if: matrix.platform == 'macos-latest'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -288,20 +298,28 @@ jobs:
         run: |
           TAG_NAME="app-v${{ needs.read-version.outputs.VERSION }}-build-${{ needs.read-version.outputs.BUILD_NUMBER }}"
           echo "Tag for release: $TAG_NAME"
-
-          # Sign the final DMG with password
+      
+          # Sign the DMG for manual installation
           echo "Creating signature for ${{ env.DMG_PATH }}..."
           tauri signer sign "${{ env.DMG_PATH }}" \
             --private-key "$TAURI_SIGNING_PRIVATE_KEY" \
             --password "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
-      
-          # Define the path to the generated signature file
-          SIG_PATH="${{ env.DMG_PATH }}.sig"
-          echo "Signature file created at $SIG_PATH"
+          DMG_SIG_PATH="${{ env.DMG_PATH }}.sig"
+          echo "DMG signature file created at $DMG_SIG_PATH"
           
-          # Upload both the DMG and its signature file to the release
-          echo "Uploading ${{ env.DMG_PATH }} to release $TAG_NAME..."
+          # Sign the tar.gz for auto-updates
+          echo "Creating signature for ${{ env.TARGZ_PATH }}..."
+          tauri signer sign "${{ env.TARGZ_PATH }}" \
+            --private-key "$TAURI_SIGNING_PRIVATE_KEY" \
+            --password "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
+          TARGZ_SIG_PATH="${{ env.TARGZ_PATH }}.sig"
+          echo "tar.gz signature file created at $TARGZ_SIG_PATH"
+          
+          # Upload all files to the release
+          echo "Uploading files to release $TAG_NAME..."
           gh release upload "$TAG_NAME" "${{ env.DMG_PATH }}" --clobber
-          echo "Uploading $SIG_PATH to release $TAG_NAME..."
-          gh release upload "$TAG_NAME" "$SIG_PATH" --clobber
+          gh release upload "$TAG_NAME" "$DMG_SIG_PATH" --clobber
+          gh release upload "$TAG_NAME" "${{ env.TARGZ_PATH }}" --clobber
+          gh release upload "$TAG_NAME" "$TARGZ_SIG_PATH" --clobber
+          echo "All files uploaded successfully"
       

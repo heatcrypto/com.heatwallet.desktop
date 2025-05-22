@@ -1,0 +1,7 @@
+{
+  "rust-analyzer.checkOnSave.enable": false,
+  "rust-analyzer.checkOnSave.command": "check",
+  "rust-analyzer.checkOnSave.allTargets": false,
+  "rust-analyzer.cargo.buildScripts.enable": false,
+  "rust-analyzer.cargo.autoreload": false
+}

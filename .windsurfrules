@@ -1,0 +1,5 @@
+Always use context7 mcp server to check for API info  
+We use tauri 2.0!
+Always kill ANY previous command thats still running UNLESS its ESENTIAL TO KEEP IT RUNNING
+Dont run the application unless I tell you to, and only run it once I tell you to
+To check if rust code is correct, use 'cargo check'
