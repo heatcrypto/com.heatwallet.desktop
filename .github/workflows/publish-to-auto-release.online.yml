@@ -283,7 +283,7 @@ jobs:
           # Create tar.gz from the .app bundle
           echo "Creating tar.gz from ${{ env.APP_PATH }} to $TARGZ_NAME"
           tar -czf "$TARGZ_NAME" -C "$(dirname "${{ env.APP_PATH }}")" "$(basename "${{ env.APP_PATH }}")"
-          echo "TARGZ_PATH=$TARGZ_NAME" >> $GITHUB_ENV          
+          echo "TARGZ_PATH=$TARGZ_NAME" >> $GITHUB_ENV
 
       - name: Install Tauri CLI (via Node.js)
         if: matrix.platform == 'macos-latest'
@@ -298,7 +298,7 @@ jobs:
         run: |
           TAG_NAME="app-v${{ needs.read-version.outputs.VERSION }}-build-${{ needs.read-version.outputs.BUILD_NUMBER }}"
           echo "Tag for release: $TAG_NAME"
-      
+
           # Sign the DMG for manual installation
           echo "Creating signature for ${{ env.DMG_PATH }}..."
           tauri signer sign "${{ env.DMG_PATH }}" \
